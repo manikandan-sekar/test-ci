@@ -1,0 +1,78 @@
+name: Test CI workflow
+
+on: [push, pull_request]
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    container:
+
+      ### running the container as root is NOT the best practise
+      ### but, we we do it for a reason on our private repo. So,
+      ### replicating the exact setup here.
+ 
+      image: gradle:6.2.1-jdk8
+      options: "--user root"
+      volumes:
+        - /datadrive
+        - /datadrive/logs
+        - /datadrive/data
+        - /datadrive/shared-storage
+      env:
+        MYSQL_PORT: 3306
+        REDIS_PORT: 6379
+        RABBIT_PORT: 5672
+        AEROSPIKE_PORT: 3000
+        MYSQL_HOST: mysql
+        REDIS_HOST: redis
+        RABBIT_HOST: rabbitmq
+        AEROSPIKE_HOST: aerospike
+        SPRING_DATASOURCE_PASSWORD: password
+        SPRING_PROFILES_ACTIVE: test
+        LOGS_DIR: /tmp
+
+    services:
+      redis:
+        image: redis:4.0.9
+        ports:
+          - 6379/tcp
+        volumes:
+          - /datadrive/redis:/data
+      aerospike:
+        image: "aerospike/aerospike-server:4.2.0.4"
+        ports:
+          - 3000/tcp
+          - 3001/tcp
+          - 3002/tcp
+          - 3003/tcp
+        env:
+          DEFAULT_TTL: 1d
+        volumes:
+          - /datadrive/aerospike:/datadrive/aerospike
+      rabbitmq:
+        image: rabbitmq:3-management
+        ports:
+          - 5672/tcp
+          - 15672/tcp
+        env:
+          RABBITMQ_DEFAULT_USER: testuser
+          RABBITMQ_DEFAULT_PASS: testpass
+      mysql:
+        image: mysql:5.7
+        ports:
+          - 3306/tcp
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: testdb
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - name: Get branch name
+        id: get_branch_name
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')"
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ steps.get_branch_name.outputs.branch }}
+      - name: Check content
+        run: ls
