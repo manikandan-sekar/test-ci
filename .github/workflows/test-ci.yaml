@@ -67,12 +67,8 @@ jobs:
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
-      - name: Get branch name
-        id: get_branch_name
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')"
       - name: Checkout code
         uses: actions/checkout@v2
-        with:
-          ref: ${{ steps.get_branch_name.outputs.branch }}
-      - name: Check content
+      - name: Get branch name
+        id: get_branch_name
         run: ls
