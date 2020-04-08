@@ -67,8 +67,5 @@ jobs:
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Get branch name
-        id: get_branch_name
+      - name: Run a simple command
         run: ls
